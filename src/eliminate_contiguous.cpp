@@ -132,6 +132,10 @@ static void remove_contiguous(const std::string& op_name, module& m, F f)
         if(not f(ins))
             continue;
 
+        auto gpu_contig_replace_check = [=](auto new_arg) {
+            return (ins->name() == "gpu::contiguous") && new_arg->get_shape().standard();
+        };
+
         // Make a copy so we can modify it while we iterate
         auto args     = ins->inputs();
         auto new_args = args;
@@ -148,7 +152,7 @@ static void remove_contiguous(const std::string& op_name, module& m, F f)
             }
             auto prev = arg->inputs().front();
             replace(new_args, arg, prev);
-            if(try_compute_shape(ins, new_args, mod_args))
+            if(try_compute_shape(ins, new_args, mod_args) && gpu_contig_replace_check(prev))
             {
                 instruction::replace_argument(ins, arg, prev);
             }
